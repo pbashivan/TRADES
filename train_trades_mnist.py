@@ -11,6 +11,12 @@ from models.net_mnist import *
 from models.small_cnn import *
 from trades import trades_loss
 
+import sys
+# Change these paths to point to where resnet50 model is
+sys.path.insert(0, '/braintree/home/bashivan/dropbox/Codes/afd/models')
+sys.path.insert(0, '/braintree/home/bashivan/dropbox/Codes/afd/')
+from mnist_models import LeNetFeats, LeNetDecoder
+from resnet_mnist import ResNet18Feats, ResNet18FeatsNorm
 
 parser = argparse.ArgumentParser(description='PyTorch MNIST TRADES Adversarial Training')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
@@ -37,16 +43,34 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--model-dir', default='./model-mnist-smallCNN',
-                    help='directory of model for saving checkpoint')
+parser.add_argument('--save_path', default='./chkpts', type=str, help='path to where to save checkpoints')
 parser.add_argument('--save-freq', '-s', default=5, type=int, metavar='N',
                     help='save frequency')
+parser.add_argument('--enc_model', default='resnet18norm', type=str)
+parser.add_argument('--exp_name', default='TRADES', type=str, help='experiment name')
 args = parser.parse_args()
 
+
 # settings
-model_dir = args.model_dir
-if not os.path.exists(model_dir):
-    os.makedirs(model_dir)
+if args.enc_model == 'resnet18':
+  enc_model = ResNet18Feats()
+elif args.enc_model == 'resnet18norm':
+  enc_model = ResNet18FeatsNorm()
+else:
+  raise ValueError()
+
+ROOT_PATH = args.save_path
+TRAINED_MODEL_PATH = os.path.join(ROOT_PATH, f'trained_models/mnist', args.exp_name)
+DATA_PATH = os.path.join(ROOT_PATH, 'data', 'mnist')
+
+postfix = 1
+safe_path = TRAINED_MODEL_PATH
+while os.path.exists(safe_path):
+  safe_path = TRAINED_MODEL_PATH + f'_{postfix}'
+  postfix += 1
+TRAINED_MODEL_PATH = safe_path
+os.makedirs(TRAINED_MODEL_PATH)
+
 use_cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
 device = torch.device("cuda" if use_cuda else "cpu")
@@ -54,12 +78,12 @@ kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
 # setup data loader
 train_loader = torch.utils.data.DataLoader(
-    datasets.MNIST('../data', train=True, download=True,
+    datasets.MNIST(DATA_PATH, train=True, download=True,
                    transform=transforms.ToTensor()),
     batch_size=args.batch_size, shuffle=True, **kwargs)
 
 test_loader = torch.utils.data.DataLoader(
-    datasets.MNIST('../data', train=False,
+    datasets.MNIST(DATA_PATH, train=False,
                    transform=transforms.ToTensor()),
                    batch_size=args.test_batch_size, shuffle=False, **kwargs)
 
@@ -144,7 +168,12 @@ def adjust_learning_rate(optimizer, epoch):
 
 def main():
     # init model, Net() can be also used here for training
-    model = SmallCNN().to(device)
+    E, Dc = enc_model, LeNetDecoder(10, num_features=64)
+    model = nn.Sequential(E, Dc)
+    if torch.cuda.device_count() > 1:
+      print("Let's use", torch.cuda.device_count(), "GPUs!")
+      model = nn.DataParallel(model)
+    model.to(device)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
     for epoch in range(1, args.epochs + 1):
@@ -163,9 +192,9 @@ def main():
         # save checkpoint
         if epoch % args.save_freq == 0:
             torch.save(model.state_dict(),
-                       os.path.join(model_dir, 'model-nn-epoch{}.pt'.format(epoch)))
+                       os.path.join(TRAINED_MODEL_PATH, 'model-nn-epoch{}.pt'.format(epoch)))
             torch.save(optimizer.state_dict(),
-                       os.path.join(model_dir, 'opt-nn-checkpoint_epoch{}.tar'.format(epoch)))
+                       os.path.join(TRAINED_MODEL_PATH, 'opt-nn-checkpoint_epoch{}.tar'.format(epoch)))
 
 
 if __name__ == '__main__':
