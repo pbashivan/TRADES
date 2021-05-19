@@ -12,10 +12,12 @@ from models.wideresnet import *
 from models.resnet import *
 from trades import trades_loss
 
-from afd_models.resnet_cifar import ResNetDecoder
-from afd_models.resnet_cifar import ResNet18Feats, ResNet18FeatsNorm, ResNet18FeatsNormLeaky
+from afd_models.resnet_imagenet import ResNetDecoder
+from afd_models.resnet_imagenet import ResNet18Feats, ResNet18FeatsNorm
 
-parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
+from utils import get_data_loaders
+
+parser = argparse.ArgumentParser(description='PyTorch TINY-IMAGENET-200 TRADES Adversarial Training')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
 parser.add_argument('--test-batch-size', type=int, default=128, metavar='N',
@@ -42,7 +44,7 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--model-dir', default='./model-cifar-wideResNet',
+parser.add_argument('--model-dir', default='./model-tiny-imagenet-200-wideResNet',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save_path', default='./chkpts', type=str, help='path to where to save checkpoints')
 parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
@@ -58,14 +60,12 @@ if args.enc_model == 'resnet18':
   enc_model = ResNet18Feats()
 elif args.enc_model == 'resnet18norm':
   enc_model = ResNet18FeatsNorm()
-elif args.enc_model == 'resnet18normleaky':
-  enc_model = ResNet18FeatsNormLeaky()
 else:
   raise ValueError()
 
 ROOT_PATH = args.save_path
-TRAINED_MODEL_PATH = os.path.join(ROOT_PATH, f'trained_models/cifar10', args.exp_name)
-DATA_PATH = os.path.join(ROOT_PATH, 'data', 'cifar10')
+TRAINED_MODEL_PATH = os.path.join(ROOT_PATH, f'trained_models/tiny-imagenet-200', args.exp_name)
+DATA_PATH = os.path.join(ROOT_PATH, 'data', 'tiny-imagenet-200')
 
 postfix = 1
 safe_path = TRAINED_MODEL_PATH
@@ -81,18 +81,7 @@ device = torch.device("cuda" if use_cuda else "cpu")
 kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
 # setup data loader
-transform_train = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-])
-transform_test = transforms.Compose([
-    transforms.ToTensor(),
-])
-trainset = torchvision.datasets.CIFAR10(root=DATA_PATH, train=True, download=True, transform=transform_train)
-train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, **kwargs)
-testset = torchvision.datasets.CIFAR10(root=DATA_PATH, train=False, download=True, transform=transform_test)
-test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=False, **kwargs)
+train_loader, test_loader = get_data_loaders(DATA_PATH)
 
 
 def train(args, model, device, train_loader, optimizer, epoch):
@@ -108,7 +97,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
                            target=target,
                            optimizer=optimizer,
                            beta=args.beta,
-                           dataset='cifar10',
+                           dataset='tiny-imagenet-200',
                            attack_name=args.attack_name)
         loss.backward()
         optimizer.step()
@@ -174,7 +163,7 @@ def adjust_learning_rate(optimizer, epoch):
 def main():
     # init model, Net() can be also used here for training
     num_decoder_features = 512
-    num_classes = 10
+    num_classes = 200
     E, Dc = enc_model, ResNetDecoder(num_features=num_decoder_features, num_classes=num_classes)
     model = nn.Sequential(E, Dc)
     if torch.cuda.device_count() > 1:

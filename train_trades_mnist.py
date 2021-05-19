@@ -11,12 +11,12 @@ from models.net_mnist import *
 from models.small_cnn import *
 from trades import trades_loss
 
-import sys
-# Change these paths to point to where resnet50 model is
-sys.path.insert(0, '/braintree/home/bashivan/dropbox/Codes/afd/models')
-sys.path.insert(0, '/braintree/home/bashivan/dropbox/Codes/afd/')
-from mnist_models import LeNetFeats, LeNetDecoder
-from resnet_mnist import ResNet18Feats, ResNet18FeatsNorm
+# import sys
+# # Change these paths to point to where resnet50 model is
+# sys.path.insert(0, '/braintree/home/bashivan/dropbox/Codes/afd/models')
+# sys.path.insert(0, '/braintree/home/bashivan/dropbox/Codes/afd/')
+from afd_models.mnist_models import LeNetFeats, LeNetDecoder
+from afd_models.resnet_mnist import ResNet18Feats, ResNet18FeatsNorm, ResNet18FeatsNormLeaky
 
 parser = argparse.ArgumentParser(description='PyTorch MNIST TRADES Adversarial Training')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
@@ -46,6 +46,7 @@ parser.add_argument('--log-interval', type=int, default=100, metavar='N',
 parser.add_argument('--save_path', default='./chkpts', type=str, help='path to where to save checkpoints')
 parser.add_argument('--save-freq', '-s', default=5, type=int, metavar='N',
                     help='save frequency')
+parser.add_argument('--attack_name', default='kl_linf_pgd', type=str)
 parser.add_argument('--enc_model', default='resnet18norm', type=str)
 parser.add_argument('--exp_name', default='TRADES', type=str, help='experiment name')
 args = parser.parse_args()
@@ -56,6 +57,8 @@ if args.enc_model == 'resnet18':
   enc_model = ResNet18Feats()
 elif args.enc_model == 'resnet18norm':
   enc_model = ResNet18FeatsNorm()
+elif args.enc_model == 'resnet18normleaky':
+  enc_model = ResNet18FeatsNormLeaky()
 else:
   raise ValueError()
 
@@ -98,12 +101,11 @@ def train(args, model, device, train_loader, optimizer, epoch):
         # calculate robust loss
         loss = trades_loss(model=model,
                            x_natural=data,
-                           y=target,
+                           target=target,
                            optimizer=optimizer,
-                           step_size=args.step_size,
-                           epsilon=args.epsilon,
-                           perturb_steps=args.num_steps,
-                           beta=args.beta)
+                           beta=args.beta,
+                           dataset='mnist',
+                           attack_name=args.attack_name)
 
         loss.backward()
         optimizer.step()

@@ -64,8 +64,8 @@ else:
   raise ValueError()
 
 ROOT_PATH = args.save_path
-TRAINED_MODEL_PATH = os.path.join(ROOT_PATH, f'trained_models/cifar10', args.exp_name)
-DATA_PATH = os.path.join(ROOT_PATH, 'data', 'cifar10')
+TRAINED_MODEL_PATH = os.path.join(ROOT_PATH, f'trained_models/cifar100', args.exp_name)
+DATA_PATH = os.path.join(ROOT_PATH, 'data', 'cifar100')
 
 postfix = 1
 safe_path = TRAINED_MODEL_PATH
@@ -89,9 +89,9 @@ transform_train = transforms.Compose([
 transform_test = transforms.Compose([
     transforms.ToTensor(),
 ])
-trainset = torchvision.datasets.CIFAR10(root=DATA_PATH, train=True, download=True, transform=transform_train)
+trainset = torchvision.datasets.CIFAR100(root=DATA_PATH, train=True, download=True, transform=transform_train)
 train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, **kwargs)
-testset = torchvision.datasets.CIFAR10(root=DATA_PATH, train=False, download=True, transform=transform_test)
+testset = torchvision.datasets.CIFAR100(root=DATA_PATH, train=False, download=True, transform=transform_test)
 test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=False, **kwargs)
 
 
@@ -108,7 +108,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
                            target=target,
                            optimizer=optimizer,
                            beta=args.beta,
-                           dataset='cifar10',
+                           dataset='cifar100',
                            attack_name=args.attack_name)
         loss.backward()
         optimizer.step()
@@ -174,7 +174,7 @@ def adjust_learning_rate(optimizer, epoch):
 def main():
     # init model, Net() can be also used here for training
     num_decoder_features = 512
-    num_classes = 10
+    num_classes = 100
     E, Dc = enc_model, ResNetDecoder(num_features=num_decoder_features, num_classes=num_classes)
     model = nn.Sequential(E, Dc)
     if torch.cuda.device_count() > 1:
