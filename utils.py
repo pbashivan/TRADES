@@ -123,6 +123,8 @@ def get_attack(model, attack_name, dataset):
       aa = AA(model, norm='Linf', eps=4./255, n_iter=5, version='standard', verbose=False)
       aa.attacks_to_run =['apgd-ce']
       return aa
+    else:
+      raise NotImplementedError(f'Attack name not recognized ({attack_name})')
 
   else:
     raise NotImplementedError(f'Dataset not recognized ({dataset})')
@@ -191,7 +193,7 @@ class KLPGDAttack:
 class AA(AutoAttack):
   def __init__(self, model, attacks_to_run=[], norm='Linf', eps=0.3, n_iter=20, version='standard', verbose=False):
     super(AA, self).__init__(model, attacks_to_run=attacks_to_run,
-    norm=norm, eps=eps, n_iter=n_iter, version=version, verbose=verbose, device='cpu')
+    norm=norm, eps=eps, n_iter=n_iter, version=version, verbose=verbose)
 
   def perturb(self, x_orig, y_orig):
     return self.run_standard_evaluation_individual(x_orig, y_orig, bs=x_orig.shape[0])[self.attacks_to_run[0]]
