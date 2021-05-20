@@ -47,7 +47,7 @@ parser.add_argument('--log-interval', type=int, default=100, metavar='N',
 parser.add_argument('--model-dir', default='./model-tiny-imagenet-200-wideResNet',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save_path', default='./chkpts', type=str, help='path to where to save checkpoints')
-parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
+parser.add_argument('--save-freq', '-s', default=10, type=int, metavar='N',
                     help='save frequency')
 parser.add_argument('--attack_name', default='aa_apgdce', type=str)
 parser.add_argument('--enc_model', default='resnet18norm', type=str)
@@ -189,9 +189,9 @@ def main():
         # save checkpoint
         if epoch % args.save_freq == 0:
             torch.save(model.state_dict(),
-                       os.path.join(TRAINED_MODEL_PATH, 'model-wideres-epoch{}.pt'.format(epoch)))
+                       os.path.join(TRAINED_MODEL_PATH, 'model-epoch{}.pt'.format(epoch)))
             torch.save(optimizer.state_dict(),
-                       os.path.join(TRAINED_MODEL_PATH, 'opt-wideres-checkpoint_epoch{}.tar'.format(epoch)))
+                       os.path.join(TRAINED_MODEL_PATH, 'opt-checkpoint_epoch{}.tar'.format(epoch)))
 
 
 if __name__ == '__main__':
