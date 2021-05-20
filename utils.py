@@ -19,20 +19,24 @@ def get_data_loaders(data_path):
 
 
 def get_tiny_imagenet_dataset(data_path, img_size=32, train_batch_size=128, test_batch_size=128):
+    # preprocess data with https://gist.github.com/moskomule/2e6a9a463f50447beca4e64ab4699ac4
     print(data_path)
     train_root = os.path.join(data_path, 'train')
     test_root = os.path.join(data_path, 'val')
-    mean = [x / 255 for x in [127.5, 127.5, 127.5]]
-    std = [x / 255 for x in [127.5, 127.5, 127.5]]
+    # mean = [x / 255 for x in [127.5, 127.5, 127.5]]
+    # std = [x / 255 for x in [127.5, 127.5, 127.5]]
     train_transform = transforms.Compose(
       [
        transforms.Resize((img_size, img_size)),
        transforms.RandomHorizontalFlip(),
        transforms.RandomCrop(img_size, padding=4),
        transforms.ToTensor(),
-       transforms.Normalize(mean, std)])
+      #  transforms.Normalize(mean, std)
+      ])
     test_transform = transforms.Compose(
-      [transforms.ToTensor(), transforms.Normalize(mean, std)])
+      [transforms.Resize((img_size, img_size)), transforms.ToTensor(), 
+      # transforms.Normalize(mean, std)
+      ])
     train_data = datasets.ImageFolder(train_root, transform=train_transform)
     test_data = datasets.ImageFolder(test_root, transform=test_transform)
 
@@ -112,11 +116,11 @@ def get_attack(model, attack_name, dataset):
   elif 'tiny-imagenet-200' in dataset:
     if attack_name == 'linf_pgd':
       return LinfPGDAttack(
-        model, loss_fn=nn.CrossEntropyLoss(reduction="sum"), eps=8. / 255,
-        nb_iter=10, eps_iter=2. / 255, rand_init=True, clip_min=0., clip_max=1.0,
+        model, loss_fn=nn.CrossEntropyLoss(reduction="sum"), eps=4. / 255,
+        nb_iter=5, eps_iter=2. / 255, rand_init=True, clip_min=0., clip_max=1.0,
         targeted=False)
     elif attack_name == 'aa_apgdce':
-      aa = AA(model, norm='Linf', eps=8./255, n_iter=10, version='standard', verbose=False)
+      aa = AA(model, norm='Linf', eps=4./255, n_iter=5, version='standard', verbose=False)
       aa.attacks_to_run =['apgd-ce']
       return aa
 

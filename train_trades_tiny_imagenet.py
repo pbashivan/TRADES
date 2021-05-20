@@ -12,8 +12,8 @@ from models.wideresnet import *
 from models.resnet import *
 from trades import trades_loss
 
-from afd_models.resnet_imagenet import ResNetDecoder
-from afd_models.resnet_imagenet import ResNet18Feats, ResNet18FeatsNorm
+from models.resnet_cifar import ResNetDecoder
+from models.resnet_cifar import ResNet18Feats, ResNet18FeatsNorm
 
 from utils import get_data_loaders
 
@@ -51,7 +51,7 @@ parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
                     help='save frequency')
 parser.add_argument('--attack_name', default='aa_apgdce', type=str)
 parser.add_argument('--enc_model', default='resnet18norm', type=str)
-parser.add_argument('--exp_name', default='TRADES', type=str, help='experiment name')
+parser.add_argument('--exp_name', default='TRADES_resnet18norm_aa_apgdce', type=str, help='experiment name')
 parser.add_argument('--data_path', default='', type=str, help='path to data')
 
 args = parser.parse_args()
