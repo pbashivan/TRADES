@@ -22,9 +22,9 @@ parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
 parser.add_argument('--test-batch-size', type=int, default=128, metavar='N',
                     help='input batch size for testing (default: 128)')
-parser.add_argument('--epochs', type=int, default=76, metavar='N',
+parser.add_argument('--epochs', type=int, default=300, metavar='N',
                     help='number of epochs to train')
-parser.add_argument('--weight-decay', '--wd', default=2e-4,
+parser.add_argument('--weight-decay', '--wd', default=1e-4,
                     type=float, metavar='W')
 parser.add_argument('--lr', type=float, default=0.1, metavar='LR',
                     help='learning rate')
@@ -32,7 +32,7 @@ parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                     help='SGD momentum')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
-parser.add_argument('--epsilon', default=0.031,
+parser.add_argument('--epsilon', default=0.015,
                     help='perturbation')
 parser.add_argument('--num-steps', default=10,
                     help='perturb number of steps')
@@ -49,9 +49,10 @@ parser.add_argument('--model-dir', default='./model-tiny-imagenet-200-wideResNet
 parser.add_argument('--save_path', default='./chkpts', type=str, help='path to where to save checkpoints')
 parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
                     help='save frequency')
-parser.add_argument('--attack_name', default='kl_linf_pgd', type=str)
+parser.add_argument('--attack_name', default='aa_apgdce', type=str)
 parser.add_argument('--enc_model', default='resnet18norm', type=str)
 parser.add_argument('--exp_name', default='TRADES', type=str, help='experiment name')
+parser.add_argument('--data_path', default='', type=str, help='path to data')
 
 args = parser.parse_args()
 
@@ -65,7 +66,7 @@ else:
 
 ROOT_PATH = args.save_path
 TRAINED_MODEL_PATH = os.path.join(ROOT_PATH, f'trained_models/tiny-imagenet-200', args.exp_name)
-DATA_PATH = os.path.join(ROOT_PATH, 'data', 'tiny-imagenet-200')
+DATA_PATH = args.data_path
 
 postfix = 1
 safe_path = TRAINED_MODEL_PATH
@@ -150,11 +151,11 @@ def eval_test(model, device, test_loader):
 def adjust_learning_rate(optimizer, epoch):
     """decrease the learning rate"""
     lr = args.lr
-    if epoch >= 75:
+    if epoch >= 150:
         lr = args.lr * 0.1
-    if epoch >= 90:
+    if epoch >= 250:
         lr = args.lr * 0.01
-    if epoch >= 100:
+    if epoch >= 300:
         lr = args.lr * 0.001
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
